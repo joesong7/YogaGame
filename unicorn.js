@@ -21,10 +21,12 @@ class Unicorn{
     // this.gravity = 0;
   }
   move(){
+    if(hitst==0){
+      this.y += this.vy;
+      this.vy += this.gravity;
+      this.y = constrain(this.y,0,this.newp);
+    }
     
-    this.y += this.vy;
-    this.vy += this.gravity;
-    this.y = constrain(this.y,0,this.newp);
     // this.x += 3;
   }
   

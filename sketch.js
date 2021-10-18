@@ -13,7 +13,16 @@ let hitst = 0;
 
 let modelURL = 'https://teachablemachine.withgoogle.com/models/3zlSSqQYT/';
 
-let label = "wating...";
+let label = "wating";
+let done_game = false;
+let keepGame = true;
+let isdone = false;
+let isMove = true;
+let checkPoint = 1;
+let countdown;
+let seconds = 10;
+let holdtime = 0;
+let lastAddTime = 0;
 
 //EVENTS
 var mousePress = false;
@@ -23,10 +32,11 @@ var keyPress = false;
 var keyPressEvent = false;
 var keyReleaseEvent = false;
 
+//載入
 function preload(){
-  uImg = loadImage("S__61939715-removebg-preview.png");
-  bImg = loadImage("121.png");
-  tImg = loadImage("train.png");
+  uImg = loadImage("img/standup.png");
+  bImg = loadImage("img/121.png");
+  tImg = loadImage("img/train.png");
   
   classifier = ml5.imageClassifier(modelURL + 'model.json');
   
@@ -36,7 +46,7 @@ function setup() {
     c = createCanvas(windowWidth,windowHeight);
   }
   else {
-    c = createCanvas(650, 450);
+    c = createCanvas(700, 500);
   }
   // imageMode(CENTER);
   rectMode(CENTER);
@@ -51,6 +61,7 @@ function setup() {
   video.size(400, 450);
   video.hide();
   
+  //ml5
   classifyVideo();
 }
 
@@ -59,18 +70,16 @@ function classifyVideo(){
 }
 
 
-// gameScreen = 1;
 function draw() {
   //background(bImg)
   image(bImg, 0, 0, width, height);
 
-  if (gameScreen == 0) {         //如果当前是游戏准备开始界面状态
-     initScreen();                //调用游戏准备方法，进入游戏准备界面
-   } else if (gameScreen == 1) {  //如果当前是游戏界面状态
-     gamePlayScreen();   
-     //调用开始游戏方法，进入游戏界面
-   } else if (gameScreen == 2) {  //如果当前是游戏结束界面状态
-     gameOverScreen();            //调用游戏结束方法，进入游戏结束界面
+  if (gameScreen == 0) {         
+     initScreen();                
+   } else if (gameScreen == 1) {  
+     gamePlayScreen();
+   } else if (gameScreen == 2) {  
+     endGameScreen();            
    } 
   
   
@@ -107,85 +116,150 @@ function gotResults(error,results){
     return;
   }
   label = results[0].label;
+  // console.log(label);
   classifyVideo();
 }
 
+//開始畫面
+function initScreen(){ 
+   unicorn.show();
+   textAlign(CENTER);                 
+   fill(255);                  
+   textSize(100);                     
+   text("YOGA", width/2, height/2); 
 
-function initScreen(){
-  text("press into",20,50); 
+   fill(251, 215, 67);                   
+   noStroke();                         
+   rectMode(CENTER);                   
+   rect(width/2, height-80, 120,60,20); 
+   fill('#222222'); 
+   textSize(30);                       
+   text("開始", width/2, height-75);
   
 }  
-let isdone = false;
-let isMove = true;
+
+
+//遊戲中
 function gamePlayScreen(){
-  
-  //image(video, 0, 0);
-  
   train.show();
   unicorn.show();
-  console.log('moveeee');
-  unicorn.move();
-  if(isMove){
-    train.move();
+  addObstacle();
+  if(keepGame){
+    
+    unicorn.move();
+    
+    // console.log("遊戲中")
+    for(let t of trains){
+      t.move();
+      if(t.hit(unicorn) && isdone === false){ //isdone 避免再次觸發
+        console.log("hitst")
+        hitst = 1;
+        console.log("keepGame")
+        keepGame = false;
+      }
+    }
+    
+  }else{
+    // console.log("靜止動作");
+    smallgame();
   }
   
-  if(mousePressEvent || (keyPressEvent && key == ' ') ) {
-    
-    
-      unicorn.jump();
-    
-    
-    
+  if(mousePressEvent || (keyPressEvent && key == ' ') ) { 
+    // console.log("有跳");
+    unicorn.jump();
     mousePressEvent = false;
     mouseReleaseEvent = false;
     keyPressEvent = false;
     keyReleaseEvent = false;
   }
-  
-  
-  if(train.hit(unicorn) && isdone === false){
-    hitst = 1;
-    
-    let sgame = false;
-    smallgame();
-    isMove  = false; //動
-    console.log("可以");
-    //let sgame = smallgame();
 
-    
-      if(sgame){
-        isMove  = false;
-
-      }
-      
-    
-  } else if(isdone === true){
-    console.log('new world')
-  }
-  
   
   
 }
-  
+//障礙物
+let obs_count = 1;
+function addObstacle(){                    
+  var interval=random(800,4000);           
+  if (millis()-lastAddTime > interval) {   
+
+     if (int(interval)%2==0 && obs_count <= 3){             obs_count ++;
+        trains.push(new Train());       
+     }
+     // else{                                 
+     //   birds.push(new Bird());             
+     // }
+      lastAddTime = millis();              
+  }
+} 
+//判斷game
 function smallgame() {
-  // noLoop();
+  
+  //isMove  = false; //不能動
   rect(width/2,height/2,400,300);
   fill(51);
   
-  // console.log(label);
-  image(video,100,100);
+  
+  image(video,width/4,100);
   
   textSize(32);
   textAlign(CENTER,CENTER);
   fill(255);
   text(label,width/2,height - 16 );
   
-  if(label === "paper"){
-    
-    sgame = true;
-    console.log("剪刀");
+  //姿勢對嗎
+  //剪刀石頭不
+  if(checkPoint === 1 || checkPoint === 2 || checkPoint === 3){
+    timer(checkPoint); //下一關
+    console.log("checkPoint === "+ checkPoint)
   }
+  
 }
+
+//倒數
+function timer(checkPoint) {
+
+  
+  text(seconds, width/2, 80);
+  if (frameCount % 60 == 0 && seconds > 0) {
+    seconds --;
+    console.log("seconds")
+    if((checkPoint == 1 &&  label == "paper")){
+      holdtime ++;
+      console.log(holdtime);
+      if(holdtime >= 2){
+        console.log("paper");
+        nextPoint();
+      }
+      console.log("holdtime");
+    }
+  }
+  
+  console.log("fuck");
+  if(seconds < 0 ) {
+    // text("GAME OVER", width/2, height*0.7);
+    
+    console.log("<0")
+  }
+
+}
+function nextPoint(){
+    setTimeout(()=>{
+      keepGame = true;
+      hitst = 0;
+      isdone = true;
+      checkPoint += 1;
+      console.log("text")
+    },2000);
+    //----- 為神麼會閃一下就不見
+      textSize(200); 
+      textAlign(CENTER,CENTER);
+      text("o", width/2+20, height/2);
+      console.log("iswork") 
+       
+  
+}
+
+//成功辨識
 function game_sucess(){
    
 }

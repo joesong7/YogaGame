@@ -111,12 +111,7 @@ function backGroundPicture(){
     else    groundX=0;                     //如果图片的左半部分完全离开了画布，就使图片回到初始的位置 
    image(gImg,groundX,300,1500,200);  
 
-  if(cloudX>(-1)*(cImg.width)/2){     
-   cloudX -= 1;                           
-  }
-   else   cloudX=0;                       
-  image(cImg,cloudX,10,1500,300);
-    
+ 
 
  
     //显示大山的图片
@@ -133,9 +128,11 @@ function draw() {
   if (gameScreen == 0) {   
     
     
-    //backGroundPicture();
+    backGroundPicture();
      initScreen();                
    } else if (gameScreen == 1) { 
+        
+    backGroundPicture();
     
      gamePlayScreen();
    } else if (gameScreen == 2) {  
